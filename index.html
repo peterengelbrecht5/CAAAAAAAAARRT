@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pete's Pantry Cart</title>
+  <script src="https://js.yoco.com/sdk/v1/yoco-sdk-web.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .product { margin-bottom: 15px; }
+    .cart { margin-top: 30px; border-top: 1px solid #ddd; padding-top: 15px; }
+    button { background: #ff9800; color: white; padding: 8px 12px; border: none; cursor: pointer; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Pete's Pantry</h1>
+
+  <div class="product">
+    <p>Pineapple, Red Onion & Habanero Marmalade — R50</p>
+    <button onclick="addToCart('Pineapple Marmalade', 50)">Add to Cart</button>
+  </div>
+
+  <div class="product">
+    <p>Classic Orange Marmalade — R40</p>
+    <button onclick="addToCart('Orange Marmalade', 40)">Add to Cart</button>
+  </div>
+
+  <div class="cart">
+    <h2>Your Cart</h2>
+    <ul id="cartItems"></ul>
+    <p>Total: R<span id="total">0</span></p>
+    <button onclick="checkout()">Checkout</button>
+  </div>
+
+  <script>
+    const cart = [];
+    const cartEl = document.getElementById("cartItems");
+    const totalEl = document.getElementById("total");
+
+    function addToCart(name, price) {
+      cart.push({ name, price });
+      renderCart();
+    }
+
+    function renderCart() {
+      cartEl.innerHTML = "";
+      let total = 0;
+      cart.forEach(item => {
+        total += item.price;
+        let li = document.createElement("li");
+        li.textContent = item.name + " - R" + item.price;
+        cartEl.appendChild(li);
+      });
+      totalEl.textContent = total;
+    }
+
+    const yoco = new window.YocoSDK({
+      publicKey: "YOUR_YOCO_PUBLIC_KEY"
+    });
+
+    function checkout() {
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+
+      yoco.showPopup({
+        amountInCents: total * 100,
+        currency: "ZAR",
+        name: "Pete's Pantry",
+        description: "Order of marmalades",
+        callback: function (result) {
+          if (result.error) {
+            alert("Payment failed: " + result.error.message);
+          } else {
+            // Send result.id to your server to capture payment
+            fetch("https://your-server.com/capture-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: result.id, cart })
+            }).then(() => {
+              alert("Payment successful!");
+              cart.length = 0;
+              renderCart();
+            });
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
